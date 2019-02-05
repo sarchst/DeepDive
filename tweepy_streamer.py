@@ -8,8 +8,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from textblob import TextBlob
 import re
-
+import sqlite3
 import twitter_credentials
+import json
+
+conn = sqlite3.connect('twitter.db')
+c = conn.cursor()
 
 class TwitterClient():
     def __init__(self, twitter_user=None):
@@ -65,9 +69,6 @@ class TwitterStreamer():
 
 
 class TwitterListener(StreamListener):
-    """
-    This is a basic listener class that just prints recieved tweets to stdout
-    """
     def __init__ (self, fetched_tweets_filename):
         self.fetched_tweets_filename = fetched_tweets_filename
 
@@ -86,6 +87,45 @@ class TwitterListener(StreamListener):
             #returning false on data method incase rate limmit occurs
             return False
         print(status)
+
+
+class TweetStreamListener(StreamListener):
+    # When data is received
+    def on_data(self, data):
+
+        # Error handling because teachers say to do this
+        try:
+
+            # Make it JSON
+            tweet = json.loads(data)
+
+            # filter out retweets
+            if not tweet['retweeted'] and 'RT @' not in tweet['text']:
+
+                # Get user via Tweepy so we can get their number of followers
+                user_profile = api.get_user(tweet['user']['screen_name'])
+
+                # assign all data to Tweet object
+                tweet_data = Tweet(
+                    str(tweet['text'].encode('utf-8')),
+                    tweet['user']['screen_name'],
+                    user_profile.followers_count,
+                    tweet['created_at'],
+                    tweet['user']['location'])
+
+                # Insert that data into the DB
+                tweet_data.insertTweet()
+                print("success")
+
+        # Let me know if something bad happens
+        except Exception as e:
+            print(e)
+            pass
+
+        return True
+
+
+
 
 class TweetAnalyzer():
     """
@@ -114,19 +154,52 @@ class TweetAnalyzer():
         df['retweets'] = np.array([tweet.retweet_count for tweet in tweets])
         return df
 
+    def create_db(self):
+        conn = sqlite3.connect('twitter.db')
+        c = conn.cursor()
+        c.execute('''CREATE TABLE tweets
+            (tweetText text,
+            user text,
+            followers integer,
+            date text,
+            location text)''')
+        conn.commit()
+        conn.close()
+
+class Tweet():
+    # Data on the tweet
+    def __init__(self, text, user, followers, date, location):
+        self.text = text
+        self.user = user
+        self.followers = followers
+        self.date = date
+        self.location = location
+
+    def clean_tweet(self):
+        return ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", self.text).split())
+
+    # Inserting that data into the DB
+    def insertTweet(self):
+        self.text = self.clean_tweet()
+        c.execute("INSERT INTO tweets (tweetText, user, followers, date, location) VALUES (?, ?, ?, ?, ?)",
+            (self.text, self.user, self.followers, self.date, self.location))
+        conn.commit()
+
 
 
 if __name__ == "__main__":
     twitter_client = TwitterClient()
     tweet_analyzer = TweetAnalyzer()
+    #tweet_analyzer.create_db()
     api = twitter_client.get_twitter_client_api()
-    tweets = api.user_timeline(screen_name="realDonaldTrump", count=200)
+    #tweets = api.user_timeline(screen_name="realDonaldTrump", count=200)
+    tweets = api.user_timeline(screen_name="CaseyNeistat", count=10)
     #print(dir(tweets[0])) # all the things we can possibly ask for
     #print(tweets[0].retweet_count)
     df = tweet_analyzer.tweets_to_data_frame(tweets)
     df['sentiment'] = np.array([tweet_analyzer.analyze_sentiment(tweet) for tweet in df['tweets']])
+    #print(df.head(50))
     print(df.head(10))
-    #print(df.head(10))
     #avergae length of all the 20 tweets
     # print(np.mean(df['len']))
     # # get the number of likes for the most liked tweets
@@ -142,3 +215,9 @@ if __name__ == "__main__":
     # time_likes .plot(figsize=(16,4), label='likes', legend=True)
     #
     # plt.show()
+     # Run the stream!
+    l = TweetStreamListener()
+    stream = Stream(twitter_client.auth, l)
+
+    # Filter the stream for these keywords. Add whatever you want here!
+    stream.filter(track=['superbowl', 'football'])
