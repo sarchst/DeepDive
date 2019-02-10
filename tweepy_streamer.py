@@ -12,8 +12,7 @@ import sqlite3
 import twitter_credentials
 import json
 
-conn = sqlite3.connect('twitter.db')
-c = conn.cursor()
+
 
 class TwitterClient():
     def __init__(self, twitter_user=None):
@@ -111,11 +110,15 @@ class TweetStreamListener(StreamListener):
                     tweet['user']['screen_name'],
                     user_profile.followers_count,
                     tweet['created_at'],
-                    tweet['user']['location'])
+                    tweet['user']['location'],
+                    tweet['lang'])
 
                 # Insert that data into the DB
-                tweet_data.insertTweet()
-                print("success")
+                if tweet_data.lang == "en":
+                    tweet_data.insertTweet()
+                    print("success")
+                else:
+                    print(tweet_data.lang)
 
         # Let me know if something bad happens
         except Exception as e:
@@ -162,27 +165,29 @@ class TweetAnalyzer():
             user text,
             followers integer,
             date text,
-            location text)''')
+            location text,
+            lang text)''')
         conn.commit()
         conn.close()
 
 class Tweet():
     # Data on the tweet
-    def __init__(self, text, user, followers, date, location):
+    def __init__(self, text, user, followers, date, location, lang):
         self.text = text
         self.user = user
         self.followers = followers
         self.date = date
         self.location = location
+        self.lang = lang
 
     def clean_tweet(self):
-        return ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", self.text).split())
+        print(' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", self.text).split()))
 
     # Inserting that data into the DB
     def insertTweet(self):
         self.text = self.clean_tweet()
-        c.execute("INSERT INTO tweets (tweetText, user, followers, date, location) VALUES (?, ?, ?, ?, ?)",
-            (self.text, self.user, self.followers, self.date, self.location))
+        c.execute("INSERT INTO tweets (tweetText, user, followers, date, location, lang) VALUES (?, ?, ?, ?, ?, ?)",
+            (self.text, self.user, self.followers, self.date, self.location, self.lang))
         conn.commit()
 
 
@@ -191,6 +196,12 @@ if __name__ == "__main__":
     twitter_client = TwitterClient()
     tweet_analyzer = TweetAnalyzer()
     #tweet_analyzer.create_db()
+
+    conn = sqlite3.connect('twitter.db')
+    c = conn.cursor()
+    sql = 'DELETE FROM tweets'
+    c.execute(sql)
+
     api = twitter_client.get_twitter_client_api()
     #tweets = api.user_timeline(screen_name="realDonaldTrump", count=200)
     tweets = api.user_timeline(screen_name="CaseyNeistat", count=10)
@@ -220,4 +231,4 @@ if __name__ == "__main__":
     stream = Stream(twitter_client.auth, l)
 
     # Filter the stream for these keywords. Add whatever you want here!
-    stream.filter(track=['superbowl', 'football'])
+    stream.filter(track=['grammys'])
