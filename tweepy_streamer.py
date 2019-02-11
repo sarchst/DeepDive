@@ -11,6 +11,7 @@ import re
 import sqlite3
 import twitter_credentials
 import json
+import inspect
 
 
 
@@ -18,7 +19,6 @@ class TwitterClient():
     def __init__(self, twitter_user=None):
         self.auth = TwitterAuthenticator().authenticate_twitter_app()
         self.twitter_client = API(self.auth)
-
         self.twitter_user = twitter_user
 
     def get_twitter_client_api(self):
@@ -74,11 +74,13 @@ class TwitterListener(StreamListener):
     def on_data(self, data): #take in data from streamlistener and do something with it
         try:
             print(data)
+            print(77)
             with open(self.fetched_tweets_filename, 'a') as tf:
                     tf.write(data)
             return True
         except BaseException as e:
             print("Error on_data: %s" % str(e))
+            print(83)
         return True
 
     def on_error(self, status):# gets called if there is an on_error
@@ -86,22 +88,24 @@ class TwitterListener(StreamListener):
             #returning false on data method incase rate limmit occurs
             return False
         print(status)
+        print(91)
 
 
 class TweetStreamListener(StreamListener):
     # When data is received
     def on_data(self, data):
-
-        # Error handling because teachers say to do this
+        twitter_client = TwitterClient()
+        api = twitter_client.get_twitter_client_api()
+        conn = sqlite3.connect('twitter.db')
+        c = conn.cursor()
+        sql = 'DELETE FROM tweets'
+        c.execute(sql)
         try:
 
-            # Make it JSON
             tweet = json.loads(data)
 
-            # filter out retweets
             if not tweet['retweeted'] and 'RT @' not in tweet['text']:
 
-                # Get user via Tweepy so we can get their number of followers
                 user_profile = api.get_user(tweet['user']['screen_name'])
 
                 # assign all data to Tweet object
@@ -115,14 +119,24 @@ class TweetStreamListener(StreamListener):
 
                 # Insert that data into the DB
                 if tweet_data.lang == "en":
-                    tweet_data.insertTweet()
+                    #tweet_data.insertTweet()
+                    print(tweet_data.text)
+                    c.execute("INSERT INTO tweets (tweetText, user, followers, date, location, lang) VALUES (?, ?, ?, ?, ?, ?)",
+                        (tweet_data.text, tweet_data.user, tweet_data.followers, tweet_data.date, tweet_data.location, tweet_data.lang))
+                    conn.commit()
+
+
+
                     print("success")
+                    print(124)
                 else:
                     print(tweet_data.lang)
+                    print(127)
 
         # Let me know if something bad happens
         except Exception as e:
             print(e)
+            print(132)
             pass
 
         return True
@@ -181,7 +195,7 @@ class Tweet():
         self.lang = lang
 
     def clean_tweet(self):
-        print(' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", self.text).split()))
+        return ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", self.text).split())
 
     # Inserting that data into the DB
     def insertTweet(self):
@@ -192,43 +206,22 @@ class Tweet():
 
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
+def main(text_input):
     twitter_client = TwitterClient()
     tweet_analyzer = TweetAnalyzer()
     #tweet_analyzer.create_db()
 
-    conn = sqlite3.connect('twitter.db')
-    c = conn.cursor()
-    sql = 'DELETE FROM tweets'
-    c.execute(sql)
+
 
     api = twitter_client.get_twitter_client_api()
-    #tweets = api.user_timeline(screen_name="realDonaldTrump", count=200)
-    tweets = api.user_timeline(screen_name="CaseyNeistat", count=10)
-    #print(dir(tweets[0])) # all the things we can possibly ask for
-    #print(tweets[0].retweet_count)
+    tweets = api.user_timeline(screen_name="MarinaAdshade", count=10)
     df = tweet_analyzer.tweets_to_data_frame(tweets)
     df['sentiment'] = np.array([tweet_analyzer.analyze_sentiment(tweet) for tweet in df['tweets']])
-    #print(df.head(50))
     print(df.head(10))
-    #avergae length of all the 20 tweets
-    # print(np.mean(df['len']))
-    # # get the number of likes for the most liked tweets
-    # print(np.max(df['likes']))
-    #
-    # print(np.max(df['retweets']))
-    #
-    # # Time Series
-    # time_retweets = pd.Series(data=df['retweets'].values, index = df['date'])
-    # time_retweets.plot(figsize=(16,4), label='retweets', legend=True)
-    #
-    # time_likes = pd.Series(data=df['likes'].values, index = df['date'])
-    # time_likes .plot(figsize=(16,4), label='likes', legend=True)
-    #
-    # plt.show()
-     # Run the stream!
+
+    #  # Run the stream!
     l = TweetStreamListener()
     stream = Stream(twitter_client.auth, l)
-
-    # Filter the stream for these keywords. Add whatever you want here!
-    stream.filter(track=['grammys'])
+    # # Filter the stream for these keywords. Add whatever you want here!
+    stream.filter(track=[text_input])
