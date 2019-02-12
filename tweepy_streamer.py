@@ -74,13 +74,11 @@ class TwitterListener(StreamListener):
     def on_data(self, data): #take in data from streamlistener and do something with it
         try:
             print(data)
-            print(77)
             with open(self.fetched_tweets_filename, 'a') as tf:
                     tf.write(data)
             return True
         except BaseException as e:
             print("Error on_data: %s" % str(e))
-            print(83)
         return True
 
     def on_error(self, status):# gets called if there is an on_error
@@ -88,7 +86,6 @@ class TwitterListener(StreamListener):
             #returning false on data method incase rate limmit occurs
             return False
         print(status)
-        print(91)
 
 
 class TweetStreamListener(StreamListener):
@@ -96,10 +93,10 @@ class TweetStreamListener(StreamListener):
     def on_data(self, data):
         twitter_client = TwitterClient()
         api = twitter_client.get_twitter_client_api()
+
         conn = sqlite3.connect('twitter.db')
         c = conn.cursor()
-        sql = 'DELETE FROM tweets'
-        c.execute(sql)
+
         try:
 
             tweet = json.loads(data)
@@ -205,13 +202,44 @@ class Tweet():
         conn.commit()
 
 
+def create_connection(db_file):
+    """ create a database connection to the SQLite database
+        specified by the db_file
+    :param db_file: database file
+    :return: Connection object or None
+    """
+    try:
+        conn = sqlite3.connect(db_file)
+        return conn
+    except Error as e:
+        print(e)
+
+    return None
+
+def delete_all_tasks(conn):
+    """
+    Delete all rows in the tasks table
+    :param conn: Connection to the SQLite database
+    :return:
+    """
+    sql = 'DELETE FROM tweets'
+    cur = conn.cursor()
+    cur.execute(sql)
+
+
 
 #if __name__ == "__main__":
 def main(text_input):
+    db = "/Users/sarch/Desktop/TwitterAnalyzer/twitter.db"
+
     twitter_client = TwitterClient()
     tweet_analyzer = TweetAnalyzer()
     #tweet_analyzer.create_db()
 
+    # create a database connection
+    conn = create_connection(db)
+    with conn:
+        delete_all_tasks(conn);
 
 
     api = twitter_client.get_twitter_client_api()
