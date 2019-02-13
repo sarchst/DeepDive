@@ -92,10 +92,17 @@ class TweetStreamListener(StreamListener):
     # When data is received
     def on_data(self, data):
         twitter_client = TwitterClient()
+        tweet_analyzer = TweetAnalyzer()
+
         api = twitter_client.get_twitter_client_api()
 
         conn = sqlite3.connect('twitter.db')
         c = conn.cursor()
+        c.execute("SELECT max(rowid) from tweets")
+        n = c.fetchone()[0]
+
+        if (n != None and n > 10):
+            return False;
 
         try:
 
@@ -118,22 +125,20 @@ class TweetStreamListener(StreamListener):
                 if tweet_data.lang == "en":
                     #tweet_data.insertTweet()
                     print(tweet_data.text)
-                    c.execute("INSERT INTO tweets (tweetText, user, followers, date, location, lang) VALUES (?, ?, ?, ?, ?, ?)",
-                        (tweet_data.text, tweet_data.user, tweet_data.followers, tweet_data.date, tweet_data.location, tweet_data.lang))
+                    c.execute("INSERT INTO tweets (tweetText, user, followers, date, location, lang, sentiment) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        (tweet_data.text, tweet_data.user, tweet_data.followers, tweet_data.date, tweet_data.location, tweet_data.lang, tweet_analyzer.analyze_sentiment(tweet_data.text)))
                     conn.commit()
 
-
-
                     print("success")
-                    print(124)
+
                 else:
                     print(tweet_data.lang)
-                    print(127)
+
 
         # Let me know if something bad happens
         except Exception as e:
             print(e)
-            print(132)
+
             pass
 
         return True
@@ -177,7 +182,8 @@ class TweetAnalyzer():
             followers integer,
             date text,
             location text,
-            lang text)''')
+            lang text,
+            sentiment integer)''')
         conn.commit()
         conn.close()
 
@@ -197,8 +203,8 @@ class Tweet():
     # Inserting that data into the DB
     def insertTweet(self):
         self.text = self.clean_tweet()
-        c.execute("INSERT INTO tweets (tweetText, user, followers, date, location, lang) VALUES (?, ?, ?, ?, ?, ?)",
-            (self.text, self.user, self.followers, self.date, self.location, self.lang))
+        c.execute("INSERT INTO tweets (tweetText, user, followers, date, location, lang, sentiment) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (self.text, self.user, self.followers, self.date, self.location, self.lang, ))
         conn.commit()
 
 
@@ -231,12 +237,13 @@ def delete_all_tasks(conn):
 #if __name__ == "__main__":
 def main(text_input):
     db = "/Users/sarch/Desktop/TwitterAnalyzer/twitter.db"
-
     twitter_client = TwitterClient()
     tweet_analyzer = TweetAnalyzer()
-    #tweet_analyzer.create_db()
 
-    # create a database connection
+    tweet_analyzer.create_db()
+
+
+    # create a database connection and clear database
     conn = create_connection(db)
     with conn:
         delete_all_tasks(conn);
@@ -248,8 +255,8 @@ def main(text_input):
     df['sentiment'] = np.array([tweet_analyzer.analyze_sentiment(tweet) for tweet in df['tweets']])
     print(df.head(10))
 
-    #  # Run the stream!
+    # Run the stream!
     l = TweetStreamListener()
     stream = Stream(twitter_client.auth, l)
-    # # Filter the stream for these keywords. Add whatever you want here!
+    # Filter the stream for these keywords
     stream.filter(track=[text_input])
