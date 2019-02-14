@@ -12,13 +12,33 @@ def get_top_tweets():
     conn = sqlite3.connect(db)
     #conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    c.execute("SELECT * from tweets")
+    c.execute("SELECT tweetText from tweets")
     result = c.fetchall()
     tweets = []
     for tweet in result:
         tweets.append(tweet)
     conn.close()
     return tweets
+
+def get_sentiment():
+    conn = sqlite3.connect(db)
+    #conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT sentiment from tweets")
+    result = c.fetchall()
+    tweets = []
+    pos = 0
+    neg = 0
+    for tweet in result:
+        tweets.append(tweet[0])
+        if tweet[0] > 0:
+            pos = pos + 1
+        elif tweet[0] < 0:
+            neg = neg + 1
+
+    total = len(tweets)
+    conn.close()
+    return round((pos/float(total))*100, 1), round((neg/float(total))*100, 1)
 
 @app.route('/')
 def my_form():
@@ -37,9 +57,13 @@ def top_tweets():
     tweets = get_top_tweets()
     return render_template('top_tweets.html', tweets = tweets)
 
-@app.route("/trends")
+@app.route("/sentiment")
 def trends():
-    return "Trending On Twitter:"
+    pos, neg = get_sentiment()
+    return render_template('sentiment.html', pos = pos, neg = neg)
+    # sentiment = get_sentiment()
+    # return render_template('sentiment.html', sentiment = sentiment)
+    return "Sentiment"
 
 if __name__ == "__main__":
     app.run(debug = True)

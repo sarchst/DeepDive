@@ -240,7 +240,7 @@ def main(text_input):
     twitter_client = TwitterClient()
     tweet_analyzer = TweetAnalyzer()
 
-    tweet_analyzer.create_db()
+    #tweet_analyzer.create_db()
 
 
     # create a database connection and clear database
