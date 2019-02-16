@@ -174,15 +174,16 @@ class TweetAnalyzer():
         return df
 
     def create_db(self):
-        conn = sqlite3.connect('twitter.db')
+        conn = sqlite3.connect('user.db')
         c = conn.cursor()
-        c.execute('''CREATE TABLE tweets
-            (tweetText text,
-            user text,
-            followers integer,
+        c.execute('''CREATE TABLE user
+            (text text,
+            id text,
+            length integer,
             date text,
-            location text,
-            lang text,
+            source text,
+            likes integer,
+            retweet integer,
             sentiment integer)''')
         conn.commit()
         conn.close()
@@ -228,15 +229,15 @@ def delete_all_tasks(conn):
     :param conn: Connection to the SQLite database
     :return:
     """
-    sql = 'DELETE FROM tweets'
+    sql = 'DELETE FROM user'
     cur = conn.cursor()
     cur.execute(sql)
 
 
 
-#if __name__ == "__main__":
-def main(text_input):
-    db = "/Users/sarch/Desktop/TwitterAnalyzer/twitter.db"
+if __name__ == "__main__":
+#def main(text_input):
+    db = "/Users/sarch/Desktop/TwitterAnalyzer/user.db"
     twitter_client = TwitterClient()
     tweet_analyzer = TweetAnalyzer()
 
@@ -250,13 +251,32 @@ def main(text_input):
 
 
     api = twitter_client.get_twitter_client_api()
-    tweets = api.user_timeline(screen_name="MarinaAdshade", count=10)
-    df = tweet_analyzer.tweets_to_data_frame(tweets)
-    df['sentiment'] = np.array([tweet_analyzer.analyze_sentiment(tweet) for tweet in df['tweets']])
-    print(df.head(10))
+    tweets = api.user_timeline(screen_name="sarchen", count=10)
+
+    conn = sqlite3.connect('user.db')
+    c = conn.cursor()
+    for tweet in tweets:
+      c.execute("INSERT INTO user (text, id, length, date, source, likes, retweet, sentiment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      (tweet.text, tweet.id, len(tweet.text), tweet.created_at, tweet.source, tweet.favorite_count, tweet.retweet_count, tweet_analyzer.analyze_sentiment(tweet.text)))
+      conn.commit()
+
+    conn.close()
+
+
+
+
+
+
+
+
+
+
+    #df = tweet_analyzer.tweets_to_data_frame(tweets)
+    #df['sentiment'] = np.array([tweet_analyzer.analyze_sentiment(tweet) for tweet in df['tweets']])
+    #print(df.head(10))
 
     # Run the stream!
     l = TweetStreamListener()
     stream = Stream(twitter_client.auth, l)
     # Filter the stream for these keywords
-    stream.filter(track=[text_input])
+    #stream.filter(track=[text_input])
