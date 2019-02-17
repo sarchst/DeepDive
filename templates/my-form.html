@@ -1,15 +1,23 @@
-{% extends "bootstrap/base.html" %}
+<<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='under_the_sea.css')}}">
+  </head>
+  <body>
+    <header>
+       <h1>Deep Dive</h1>
+   </header>
 
-{% block content %}
+   <div id="form" method="POST">
 
-<form method="POST">
-  <div class="form-group">
-    <label for="exampleInputEmail1">Enter the handle of a twitter user below and click submit</label>
-    <input name="text">
-    <input type="submit" class="form-control" id="exampleInputEmail1"  placeholder="Twitter User">
-    <small id="emailHelp" class="form-text text-muted">Fetching data may take up to 30 seconds.</small>
-  </div>
-</form>
+   <div class="fish" id="fish"></div>
+   <div class="fish" id="fish2"></div>
 
-
-{% endblock %}
+   <form id="waterform" method="post">
+      <label for="deepdive">Enter the handle of a Twitter user below to begin your Deep Dive. <br>  <br> Fetching data may take up to 30 seconds.</label>
+       <input name="text">
+       <input type="submit" value="Go" />
+   </form>
+   </div>
+  </body>
+</html>
