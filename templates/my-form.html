@@ -1,4 +1,15 @@
+{% extends "bootstrap/base.html" %}
+
+{% block content %}
+
 <form method="POST">
+  <div class="form-group">
+    <label for="exampleInputEmail1">Enter the handle of a twitter user below and click submit</label>
     <input name="text">
-    <input type="submit">
+    <input type="submit" class="form-control" id="exampleInputEmail1"  placeholder="Twitter User">
+    <small id="emailHelp" class="form-text text-muted">Fetching data may take up to 30 seconds.</small>
+  </div>
 </form>
+
+
+{% endblock %}

@@ -13,7 +13,7 @@ import twitter_credentials
 import json
 import inspect
 
-
+#todo catch eroor for no user exists
 
 class TwitterClient():
     def __init__(self, twitter_user=None):
@@ -235,8 +235,8 @@ def delete_all_tasks(conn):
 
 
 
-if __name__ == "__main__":
-#def main(text_input):
+#if __name__ == "__main__":
+def main(text_input):
     db = "/Users/sarch/Desktop/TwitterAnalyzer/user.db"
     twitter_client = TwitterClient()
     tweet_analyzer = TweetAnalyzer()
@@ -251,7 +251,7 @@ if __name__ == "__main__":
 
 
     api = twitter_client.get_twitter_client_api()
-    tweets = api.user_timeline(screen_name="sarchen", count=10)
+    tweets = api.user_timeline(screen_name=text_input, count=100)
 
     conn = sqlite3.connect('user.db')
     c = conn.cursor()
