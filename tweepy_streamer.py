@@ -12,8 +12,17 @@ import sqlite3
 import twitter_credentials
 import json
 import inspect
+import operator
+from collections import Counter
+from nltk.corpus import stopwords
+import nltk
+nltk.download('stopwords')
+import string
 
 #todo catch eroor for no user exists
+
+
+
 
 class TwitterClient():
     def __init__(self, twitter_user=None):
@@ -240,6 +249,8 @@ def main(text_input):
     db = "/Users/sarch/Desktop/TwitterAnalyzer/user.db"
     twitter_client = TwitterClient()
     tweet_analyzer = TweetAnalyzer()
+    punctuation = list(string.punctuation)
+    stop = stopwords.words('english') + punctuation + ['rt', 'via']
 
     #tweet_analyzer.create_db()
 
@@ -253,13 +264,22 @@ def main(text_input):
     api = twitter_client.get_twitter_client_api()
     tweets = api.user_timeline(screen_name=text_input, count=100)
 
+    count_all = Counter()
+
     conn = sqlite3.connect('user.db')
     c = conn.cursor()
     for tweet in tweets:
-      c.execute("INSERT INTO user (text, id, length, date, source, likes, retweet, sentiment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      (tweet.text, tweet.id, len(tweet.text), tweet.created_at, tweet.source, tweet.favorite_count, tweet.retweet_count, tweet_analyzer.analyze_sentiment(tweet.text)))
-      conn.commit()
+        # Create a list with all the terms
+        #terms_all = [term for term in ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", tweet.text).split())]
+        terms_stop = [term for term in (' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", tweet.text).split())).split() if term not in stop]
+        # Update the counter
+        count_all.update(terms_stop)
 
+        c.execute("INSERT INTO user (text, id, length, date, source, likes, retweet, sentiment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (tweet.text, tweet.id, len(tweet.text), tweet.created_at, tweet.source, tweet.favorite_count, tweet.retweet_count, tweet_analyzer.analyze_sentiment(tweet.text)))
+        conn.commit()
+
+    print(count_all.most_common(5))
     conn.close()
 
 
