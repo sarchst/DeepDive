@@ -19,6 +19,17 @@ import nltk
 nltk.download('stopwords')
 import string
 
+# Start with loading all necessary libraries
+import numpy as np
+import pandas as pd
+from os import path
+from PIL import Image
+from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
+
+import matplotlib.pyplot as plt
+from IPython import get_ipython
+#get_ipython().run_line_magic('matplotlib', 'inline')
+
 #todo catch eroor for no user exists
 
 
@@ -265,7 +276,7 @@ def main(text_input):
     tweets = api.user_timeline(screen_name=text_input, count=100)
 
     count_all = Counter()
-
+    wordCloudText = ""
     conn = sqlite3.connect('user.db')
     c = conn.cursor()
     for tweet in tweets:
@@ -279,8 +290,23 @@ def main(text_input):
         (tweet.text, tweet.id, len(tweet.text), tweet.created_at, tweet.source, tweet.favorite_count, tweet.retweet_count, tweet_analyzer.analyze_sentiment(tweet.text)))
         conn.commit()
 
-    print(count_all.most_common(5))
+        wordCloudText = wordCloudText + ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", tweet.text).split())
+
+
+    print(count_all.most_common(20))
     conn.close()
+
+    # Start with one review:
+    # wordCloudText = "Tish is 19 years old and Fonny is 22 when they first begin to love each other in a romantic, adult and sexual fashion, and Jenkins begins his movie with a shot of them walking together. They stare into each other’s eyes and seem to get lost there, but that process is abruptly halted when we learn that Fonny has been put in jail for a crime he did not commit. “I hope that nobody has ever had to look at anybody they love through glass,” Tish says on the soundtrack. We see her meeting with Fonny in prison and telling him that she is pregnant with his child."
+
+    # Create and generate a word cloud image:
+    wordcloud = WordCloud().generate(wordCloudText)
+
+    # Display the generated image:
+    # plt.imshow(wordcloud, interpolation='bilinear')
+    # plt.axis("off")
+    # plt.show()
+    wordcloud.to_file("img/first_review.png")
 
 
 
