@@ -74,7 +74,7 @@ def trends():
     # return render_template('sentiment.html', sentiment = sentiment)
     return "Sentiment"
 
-@app.route('/pie_sent')
+@app.route('/data')
 def pie_sent():
     pos, neg, neut = get_sentiment()
     values = [pos,neg, neut]
@@ -82,19 +82,15 @@ def pie_sent():
     colors = ["#F7464A", "#46BFBD", "#F6E481"]
     pie_labels = labels
     pie_values = values
-    return render_template('pie_chart.html', title='Positive vs Negative Tweets for ', max=100, set=zip(values, labels, colors))
 
+    pos2, neg2, neut2 = get_sentiment()
+    values2 = [pos2,neg2, neut2]
+    labels2 = ['Negative', 'Positive', 'Neutral']
+    colors2 = ["#F7464A", "#46BFBD", "#F6E481"]
+    pie_labels = labels2
+    pie_values = values2
 
-@app.route('/pie_subj')
-def pie_subj():
-    pos, neg, neut = get_sentiment()
-    values = [pos,neg, neut]
-    labels = ['Negative', 'Positive', 'Neutral']
-    colors = ["#F7464A", "#46BFBD", "#F6E481"]
-    pie_labels = labels
-    pie_values = values
-    return render_template('pie_chart.html', title='Positive vs Negative Tweets for ', max=100, set=zip(values, labels, colors))
-
+    return render_template('pie_chart.html', title='Positive vs Negative Tweets for ', max=100, set=zip(values, labels, colors), set2=zip(values2, labels2, colors2))
 
 if __name__ == "__main__":
     app.run(debug = True)

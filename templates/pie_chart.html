@@ -28,6 +28,29 @@
       new Chart(document.getElementById("chart").getContext("2d")).Pie(pieData);
     </script>
 
+    <h1>{{ title }}</h1>
+
+    <canvas id="chart2" width="600" height="400"></canvas>
+    <script>
+      var pieData = [
+        {% for item2, label2, colors2 in set2 %}
+          {
+            value: {{item2}},
+            label: "{{label2}}",
+            color : "{{colors2}}"
+          },
+        {% endfor %}
+      ];
+      // get bar chart canvas
+      var mychart = document.getElementById("chart2").getContext("2d");
+      steps = 10
+      max = {{ max }}
+      // draw pie chart
+      new Chart(document.getElementById("chart2").getContext("2d")).Pie(pieData);
+    </script>
+
+    <img src="{{url_for('static', filename='first_review.png')}}">
+
 
 
 
