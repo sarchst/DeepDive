@@ -18,6 +18,7 @@ from nltk.corpus import stopwords
 import nltk
 nltk.download('stopwords')
 import string
+import os
 
 # Start with loading all necessary libraries
 import numpy as np
@@ -257,6 +258,7 @@ def delete_all_tasks(conn):
 
 #if __name__ == "__main__":
 def main(text_input):
+    os.remove("first_review.png")
     db = "/Users/sarch/Desktop/TwitterAnalyzer/user.db"
     twitter_client = TwitterClient()
     tweet_analyzer = TweetAnalyzer()
@@ -274,6 +276,8 @@ def main(text_input):
 
     api = twitter_client.get_twitter_client_api()
     tweets = api.user_timeline(screen_name=text_input, count=100)
+
+    #os.remove(file) for file in os.listdir('/Users/sarch/Desktop/TwitterAnalyzer/') if file.endswith('.png')
 
     count_all = Counter()
     wordCloudText = ""
@@ -299,7 +303,8 @@ def main(text_input):
     # Create and generate a word cloud image:
     wordcloud = WordCloud(stopwords=stopwords2,background_color="white",width=800, height=400).generate(wordCloudText)
 
-    wordcloud.to_file("static/first_review.png")
+    print("about to save wordcloud ....")
+    wordcloud.to_file("first_review.png")
 
     #df = tweet_analyzer.tweets_to_data_frame(tweets)
     #df['sentiment'] = np.array([tweet_analyzer.analyze_sentiment(tweet) for tweet in df['tweets']])
